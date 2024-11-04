@@ -1,0 +1,199 @@
+Netid: xxz230009
+Name: Xi Zhang
+
+1.Why are there missing keys with 2 or more threads, but not with 1 thread?
+Identify a sequence of events that can lead to keys missing for 2 threads.
+
+With two or more threads, one thread might try to get a key that another thread hasn’t put into the hash table yet, leading to missing keys. This happens because operations are happening concurrently without waiting for each other.
+
+When there’s only one thread, each put operation completes before the get phase starts, so all keys are guaranteed to be in the hash table when get tries to retrieve them.
+
+A Sequence example for this question:
+
+Thread 1 starts inserting key = 100:
+
+Thread 1 calculates the bucket for key = 100 (e.g., key % NBUCKET).
+Thread 1 begins inserting key = 100 but hasn’t completed the insertion yet (e.g., it's in the process of linking the new entry to the bucket's list).
+Context Switch:
+
+A context switch occurs, and Thread 1 is paused before it finishes inserting key = 100.
+At this point, key = 100 is not yet fully added to the hash table.
+Thread 2 starts retrieving key = 100:
+
+Thread 2 attempts to retrieve key = 100 by searching in the corresponding bucket.
+Since Thread 1 hasn’t completed the insertion, Thread 2 doesn’t find key = 100 in the hash table.
+As a result, Thread 2 records key = 100 as missing.
+
+Thread 1 resumes and completes the insertion:
+
+Thread 1 resumes and finishes inserting key = 100 into the hash table.
+Outcome:
+
+When both threads finish their operations, Thread 2 reports that key = 100 was missing, even though Thread 1 eventually inserted it.
+This happens because Thread 2 checked for key = 100 before Thread 1 completed its insertion.
+
+
+
+
+
+
+Test your code first with 1 thread, then test it with 2 threads. Is it correct (i.e. have you
+eliminated missing keys?)?
+2. Is the two-threaded version faster than the single-threaded version?
+No more missing keys
+
+{csgrads1:~/E3} ./a.out 2
+1: put time = 0.050385
+0: put time = 0.052188
+1: get time = 1.060447
+1: 0 keys missing
+0: get time = 1.065123
+0: 0 keys missing
+completion time = 1.117602
+{csgrads1:~/E3} ./a.out 2
+1: put time = 0.060744
+0: put time = 0.061128
+1: get time = 1.098952
+1: 0 keys missing
+0: get time = 1.099137
+0: 0 keys missing
+completion time = 1.160532
+
+{csgrads1:~/E3} ./a.out 1
+0: put time = 0.016558
+0: get time = 0.874333
+0: 0 keys missing
+completion time = 0.891256
+{csgrads1:~/E3} ./a.out 1
+0: put time = 0.016257
+0: get time = 0.876176
+0: 0 keys missing
+completion time = 0.892833
+
+No, two-threaded version is not faster than the single-threaded version as you can see above data.
+
+
+
+
+
+
+Modify your code so that get operations run in parallel while maintaining correctness.
+(Hint: are the locks in get necessary for correctness in this application?)
+Modify your code so that some put operations run in parallel while maintaining
+correctness. (Hint: use a lock per bucket)
+3. What do you observe?
+
+{csgrads1:~/E3} ./a.out 2
+0: put time = 0.026392
+1: put time = 0.026720
+1: get time = 0.465566
+1: 0 keys missing
+0: get time = 0.487719
+0: 0 keys missing
+completion time = 0.514758
+{csgrads1:~/E3} ./a.out 2
+0: put time = 0.026623
+1: put time = 0.027316
+1: get time = 0.458604
+1: 0 keys missing
+0: get time = 0.489655
+0: 0 keys missing
+completion time = 0.517267
+
+{csgrads1:~/E3} ./a.out 1
+0: put time = 0.016444
+^[[A0: get time = 0.879705
+0: 0 keys missing
+completion time = 0.896497
+{csgrads1:~/E3} ./a.out 1
+0: put time = 0.016537
+0: get time = 0.874793
+0: 0 keys missing
+completion time = 0.891678
+
+This time, two-thread version is faster than the single-thread version, and there are still no more missing keys, which is great!!!
+
+In this case, the get() simply traverses the hash table and does not modify the structure of the hash table. Therefore, whether or not locks are added to the get() does not result in key miss. So, when only considering whether keys are lost or not, there is no need to add locks in the get operation.
+
+
+
+
+
+4. What do you infer when you repeat the above experiments for more than 2
+threads (say, 10 or more?)
+
+{csgrads1:~/E3} ./a.out 10
+1: put time = 0.014882
+6: put time = 0.014507
+2: put time = 0.015035
+9: put time = 0.014469
+3: put time = 0.015159
+4: put time = 0.014968
+0: put time = 0.015332
+7: put time = 0.014789
+8: put time = 0.014679
+5: put time = 0.014960
+7: get time = 0.130333
+7: 0 keys missing
+8: get time = 0.131469
+8: 0 keys missing
+5: get time = 0.131931
+5: 0 keys missing
+3: get time = 0.132506
+3: 0 keys missing
+0: get time = 0.133993
+0: 0 keys missing
+9: get time = 0.136084
+9: 0 keys missing
+4: get time = 0.138938
+4: 0 keys missing
+2: get time = 0.139258
+2: 0 keys missing
+6: get time = 0.139572
+6: 0 keys missing
+1: get time = 0.140873
+1: 0 keys missing
+completion time = 0.156701
+{csgrads1:~/E3} ./a.out 12
+a.out: tl.c:135: main: Assertion `100000 % nthread == 0' failed.
+Aborted
+{csgrads1:~/E3} ./a.out 11
+a.out: tl.c:135: main: Assertion `100000 % nthread == 0' failed.
+Aborted
+{csgrads1:~/E3} ./a.out 10
+4: put time = 0.014587
+0: put time = 0.015861
+2: put time = 0.015813
+1: put time = 0.015999
+9: put time = 0.014261
+8: put time = 0.014516
+7: put time = 0.014663
+5: put time = 0.014893
+3: put time = 0.016098
+6: put time = 0.014811
+7: get time = 0.126139
+7: 0 keys missing
+9: get time = 0.126826
+9: 0 keys missing
+8: get time = 0.128157
+8: 0 keys missing
+3: get time = 0.128250
+3: 0 keys missing
+6: get time = 0.129370
+6: 0 keys missing
+5: get time = 0.129443
+5: 0 keys missing
+2: get time = 0.137381
+2: 0 keys missing
+4: get time = 0.137455
+4: 0 keys missing
+0: get time = 0.137743
+0: 0 keys missing
+1: get time = 0.137825
+1: 0 keys missing
+completion time = 0.154569
+
+While increasing threads can initially improve performance, too many threads cause lock contention and performance degradation. As you can see above.
+
+Proper synchronization ensures no missing keys, even with more threads. And that's great!
+
